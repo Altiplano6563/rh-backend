@@ -6,16 +6,16 @@ const compression = require('compression');
 const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
 const mongoose = require('mongoose');
-const errorHandler = require('./middleware/errorHandler');
+const errorHandler = require('./src/middleware/errorHandler');
 
 // Importação de rotas
-const authRoutes = require('./routes/auth');
-const employeeRoutes = require('./routes/employees');
-const departmentRoutes = require('./routes/departments');
-const positionRoutes = require('./routes/positions');
-const movementRoutes = require('./routes/movements');
-const salaryTableRoutes = require('./routes/salaryTables');
-const dashboardRoutes = require('./routes/dashboard');
+const authRoutes = require('./src/routes/auth');
+const employeeRoutes = require('./src/routes/employees');
+const departmentRoutes = require('./src/routes/departments');
+const positionRoutes = require('./src/routes/positions');
+const movementRoutes = require('./src/routes/movements');
+const salaryTableRoutes = require('./src/routes/salaryTables');
+const dashboardRoutes = require('./src/routes/dashboard');
 
 // Inicialização do app
 const app = express();
