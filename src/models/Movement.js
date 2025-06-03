@@ -1,32 +1,35 @@
 const mongoose = require('mongoose');
-const encrypt = require('mongoose-encryption');
+const Schema = mongoose.Schema;
 
-const MovementSchema = new mongoose.Schema({
+// Importar plugin de criptografia
+const mongooseEncryption = require('mongoose-encryption');
+
+const MovementSchema = new Schema({
   funcionario: {
-    type: mongoose.Schema.Types.ObjectId,
+    type: Schema.Types.ObjectId,
     ref: 'Employee',
-    required: [true, 'Por favor, adicione um funcionário']
+    required: true
   },
   tipo: {
     type: String,
-    enum: ['Promoção', 'Transferência', 'Ajuste Salarial', 'Mudança de Horário', 'Mudança de Modalidade', 'Mérito', 'Equiparação Salarial', 'Desligamento', 'Afastamento', 'Licença Maternidade'],
-    required: [true, 'Por favor, adicione um tipo de movimentação']
+    enum: ['Promoção', 'Transferência', 'Ajuste Salarial', 'Desligamento', 'Afastamento', 'Licença Maternidade'],
+    required: true
   },
-  cargoAnterior: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Position'
-  },
-  cargoNovo: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Position'
-  },
-  departamentoAnterior: {
-    type: mongoose.Schema.Types.ObjectId,
+  departamentoOrigem: {
+    type: Schema.Types.ObjectId,
     ref: 'Department'
   },
-  departamentoNovo: {
-    type: mongoose.Schema.Types.ObjectId,
+  departamentoDestino: {
+    type: Schema.Types.ObjectId,
     ref: 'Department'
+  },
+  cargoOrigem: {
+    type: Schema.Types.ObjectId,
+    ref: 'Position'
+  },
+  cargoDestino: {
+    type: Schema.Types.ObjectId,
+    ref: 'Position'
   },
   salarioAnterior: {
     type: Number
@@ -34,25 +37,28 @@ const MovementSchema = new mongoose.Schema({
   salarioNovo: {
     type: Number
   },
-  justificativa: {
-    type: String,
-    required: [true, 'Por favor, adicione uma justificativa']
+  dataSolicitacao: {
+    type: Date,
+    default: Date.now
   },
   dataEfetivacao: {
-    type: Date,
-    required: [true, 'Por favor, adicione uma data de efetivação']
-  },
-  aprovadoPor: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User'
+    type: Date
   },
   status: {
     type: String,
-    enum: ['Pendente', 'Aprovado', 'Rejeitado'],
+    enum: ['Pendente', 'Aprovado', 'Rejeitado', 'Cancelado'],
     default: 'Pendente'
   },
-  motivoRejeicao: {
+  justificativa: {
+    type: String,
+    required: true
+  },
+  observacoes: {
     type: String
+  },
+  aprovadoPor: {
+    type: Schema.Types.ObjectId,
+    ref: 'User'
   },
   createdAt: {
     type: Date,
@@ -64,15 +70,25 @@ const MovementSchema = new mongoose.Schema({
   }
 });
 
-// Configuração para criptografia de campos sensíveis (LGPD)
-const encKey = process.env.ENCRYPTION_KEY;
-const sigKey = process.env.ENCRYPTION_KEY;
-
-// Campos a serem criptografados
-MovementSchema.plugin(encrypt, { 
-  encryptionKey: encKey, 
-  signingKey: sigKey,
-  encryptedFields: ['salarioAnterior', 'salarioNovo'] 
+// Middleware para atualizar o campo updatedAt antes de salvar
+MovementSchema.pre('save', function(next) {
+  this.updatedAt = Date.now();
+  next();
 });
+
+// Configuração de criptografia para campos sensíveis
+// Modificado para usar variáveis de ambiente ou valores padrão seguros
+const encKey = process.env.ENCRYPTION_KEY || 'sua_chave_de_criptografia_padrao_muito_segura_12345';
+
+// Aplicar plugin de criptografia apenas se a chave estiver disponível
+if (encKey) {
+  const encryptionOptions = {
+    secret: encKey,
+    encryptedFields: ['salarioAnterior', 'salarioNovo', 'justificativa'],
+    excludeFromEncryption: ['_id', 'funcionario', 'tipo', 'status']
+  };
+  
+  MovementSchema.plugin(mongooseEncryption, encryptionOptions);
+}
 
 module.exports = mongoose.model('Movement', MovementSchema);

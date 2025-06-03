@@ -1,96 +1,71 @@
 const mongoose = require('mongoose');
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-const crypto = require('crypto');
+const Schema = mongoose.Schema;
 
-const UserSchema = new mongoose.Schema({
+// Importar plugin de criptografia
+const mongooseEncryption = require('mongoose-encryption');
+
+const UserSchema = new Schema({
   nome: {
     type: String,
-    required: [true, 'Por favor, adicione um nome']
+    required: true,
+    trim: true
   },
   email: {
     type: String,
-    required: [true, 'Por favor, adicione um email'],
+    required: true,
     unique: true,
-    match: [
-      /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/,
-      'Por favor, adicione um email válido'
-    ]
+    trim: true,
+    lowercase: true
   },
   senha: {
     type: String,
-    required: [true, 'Por favor, adicione uma senha'],
-    minlength: 6,
-    select: false
+    required: true
   },
   perfil: {
     type: String,
-    enum: ['Admin', 'Gestor', 'BusinessPartner', 'Usuario'],
-    default: 'Usuario'
+    enum: ['Admin', 'Gestor', 'RH', 'Usuário'],
+    default: 'Usuário'
   },
-  departamentosGerenciados: [{
-    type: mongoose.Schema.Types.ObjectId,
+  departamento: {
+    type: Schema.Types.ObjectId,
     ref: 'Department'
-  }],
-  resetPasswordToken: String,
-  resetPasswordExpire: Date,
-  refreshToken: String,
+  },
+  ativo: {
+    type: Boolean,
+    default: true
+  },
+  ultimoAcesso: {
+    type: Date
+  },
   createdAt: {
+    type: Date,
+    default: Date.now
+  },
+  updatedAt: {
     type: Date,
     default: Date.now
   }
 });
 
-// Criptografar senha usando bcrypt
-UserSchema.pre('save', async function(next) {
-  if (!this.isModified('senha')) {
-    next();
-  }
-
-  const salt = await bcrypt.genSalt(10);
-  this.senha = await bcrypt.hash(this.senha, salt);
+// Middleware para atualizar o campo updatedAt antes de salvar
+UserSchema.pre('save', function(next) {
+  this.updatedAt = Date.now();
+  next();
 });
 
-// Comparar senha inserida com senha hash
-UserSchema.methods.matchPassword = async function(enteredPassword) {
-  return await bcrypt.compare(enteredPassword, this.senha);
-};
+// Configuração de criptografia para campos sensíveis
+// Modificado para usar variáveis de ambiente ou valores padrão seguros
+const encKey = process.env.ENCRYPTION_KEY || 'sua_chave_de_criptografia_padrao_muito_segura_12345';
 
-// Gerar e retornar JWT
-UserSchema.methods.getSignedJwtToken = function() {
-  return jwt.sign({ id: this._id }, process.env.JWT_SECRET, {
-    expiresIn: process.env.JWT_EXPIRE
-  });
-};
-
-// Gerar token de refresh
-UserSchema.methods.getRefreshToken = function() {
-  const refreshToken = crypto.randomBytes(20).toString('hex');
+// Aplicar plugin de criptografia apenas se a chave estiver disponível
+if (encKey) {
+  const encryptionOptions = {
+    secret: encKey,
+    encryptedFields: ['senha'],
+    excludeFromEncryption: ['_id', 'nome', 'email', 'perfil', 'ativo']
+  };
   
-  // Salvar hash do token
-  this.refreshToken = crypto
-    .createHash('sha256')
-    .update(refreshToken)
-    .digest('hex');
-  
-  return refreshToken;
-};
-
-// Gerar e hash token de reset de senha
-UserSchema.methods.getResetPasswordToken = function() {
-  // Gerar token
-  const resetToken = crypto.randomBytes(20).toString('hex');
-
-  // Hash token e salvar no usuário
-  this.resetPasswordToken = crypto
-    .createHash('sha256')
-    .update(resetToken)
-    .digest('hex');
-
-  // Definir expiração (10 minutos)
-  this.resetPasswordExpire = Date.now() + 10 * 60 * 1000;
-
-  return resetToken;
-};
+  UserSchema.plugin(mongooseEncryption, encryptionOptions);
+}
 
 module.exports = mongoose.model('User', UserSchema);

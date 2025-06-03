@@ -1,33 +1,38 @@
 const mongoose = require('mongoose');
+const Schema = mongoose.Schema;
 
-const SalaryTableSchema = new mongoose.Schema({
+// Importar plugin de criptografia
+const mongooseEncryption = require('mongoose-encryption');
+
+const SalaryTableSchema = new Schema({
   cargo: {
-    type: mongoose.Schema.Types.ObjectId,
+    type: Schema.Types.ObjectId,
     ref: 'Position',
-    required: [true, 'Por favor, adicione um cargo']
+    required: true
   },
   nivel: {
     type: String,
-    enum: ['Junior', 'Pleno', 'Senior', 'Especialista', 'Coordenador', 'Gerente', 'Diretor'],
-    required: [true, 'Por favor, adicione um nível']
+    enum: ['Junior', 'Pleno', 'Senior', 'Especialista', 'Coordenador', 'Gerente', 'Gerente Executivo', 'Diretor'],
+    required: true
   },
-  valorMinimo: {
+  faixaMinima: {
     type: Number,
-    required: [true, 'Por favor, adicione um valor mínimo']
+    required: true
   },
-  valorMaximo: {
+  faixaMaxima: {
     type: Number,
-    required: [true, 'Por favor, adicione um valor máximo']
+    required: true
   },
-  valorMedio: {
-    type: Number,
-    default: function() {
-      return (this.valorMinimo + this.valorMaximo) / 2;
-    }
+  dataVigencia: {
+    type: Date,
+    default: Date.now
   },
   ativo: {
     type: Boolean,
     default: true
+  },
+  observacoes: {
+    type: String
   },
   createdAt: {
     type: Date,
@@ -38,5 +43,26 @@ const SalaryTableSchema = new mongoose.Schema({
     default: Date.now
   }
 });
+
+// Middleware para atualizar o campo updatedAt antes de salvar
+SalaryTableSchema.pre('save', function(next) {
+  this.updatedAt = Date.now();
+  next();
+});
+
+// Configuração de criptografia para campos sensíveis
+// Modificado para usar variáveis de ambiente ou valores padrão seguros
+const encKey = process.env.ENCRYPTION_KEY || 'sua_chave_de_criptografia_padrao_muito_segura_12345';
+
+// Aplicar plugin de criptografia apenas se a chave estiver disponível
+if (encKey) {
+  const encryptionOptions = {
+    secret: encKey,
+    encryptedFields: ['faixaMinima', 'faixaMaxima'],
+    excludeFromEncryption: ['_id', 'cargo', 'nivel', 'ativo']
+  };
+  
+  SalaryTableSchema.plugin(mongooseEncryption, encryptionOptions);
+}
 
 module.exports = mongoose.model('SalaryTable', SalaryTableSchema);

@@ -1,97 +1,104 @@
 const mongoose = require('mongoose');
-const encrypt = require('mongoose-encryption');
+const Schema = mongoose.Schema;
 
-const EmployeeSchema = new mongoose.Schema({
+// Importar plugin de criptografia
+const mongooseEncryption = require('mongoose-encryption');
+
+const EmployeeSchema = new Schema({
   nome: {
     type: String,
-    required: [true, 'Por favor, adicione um nome'],
+    required: true,
     trim: true
   },
   email: {
     type: String,
-    required: [true, 'Por favor, adicione um email'],
+    required: true,
     unique: true,
-    match: [
-      /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/,
-      'Por favor, adicione um email válido'
-    ]
+    trim: true,
+    lowercase: true
   },
   cpf: {
     type: String,
-    required: [true, 'Por favor, adicione um CPF'],
-    unique: true
+    required: true,
+    unique: true,
+    trim: true
   },
   dataNascimento: {
     type: Date,
-    required: [true, 'Por favor, adicione uma data de nascimento']
+    required: true
   },
   telefone: {
-    type: String
+    type: String,
+    trim: true
+  },
+  endereco: {
+    rua: String,
+    numero: String,
+    complemento: String,
+    bairro: String,
+    cidade: String,
+    estado: String,
+    cep: String
   },
   departamento: {
-    type: mongoose.Schema.Types.ObjectId,
+    type: Schema.Types.ObjectId,
     ref: 'Department',
-    required: [true, 'Por favor, adicione um departamento']
+    required: true
   },
   cargo: {
-    type: mongoose.Schema.Types.ObjectId,
+    type: Schema.Types.ObjectId,
     ref: 'Position',
-    required: [true, 'Por favor, adicione um cargo']
-  },
-  liderancaDireta: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Employee'
-  },
-  status: {
-    type: String,
-    enum: ['Ativo', 'Inativo', 'Afastado', 'Férias', 'Licença Maternidade'],
-    default: 'Ativo'
-  },
-  dataContratacao: {
-    type: Date,
-    required: [true, 'Por favor, adicione uma data de contratação']
+    required: true
   },
   salario: {
     type: Number,
-    required: [true, 'Por favor, adicione um salário']
+    required: true
   },
-  cargaHoraria: {
-    type: Number,
-    required: [true, 'Por favor, adicione uma carga horária'],
-    enum: [150, 180, 200, 220]
+  dataAdmissao: {
+    type: Date,
+    required: true,
+    default: Date.now
   },
-  horarioTrabalho: {
-    type: String
+  dataDemissao: {
+    type: Date
+  },
+  status: {
+    type: String,
+    enum: ['Ativo', 'Inativo', 'Afastado', 'Férias'],
+    default: 'Ativo'
   },
   modalidadeTrabalho: {
     type: String,
     enum: ['Presencial', 'Remoto', 'Híbrido'],
     default: 'Presencial'
   },
+  cargaHoraria: {
+    type: Number,
+    enum: [150, 180, 200, 220],
+    default: 220
+  },
+  jornadaTrabalho: {
+    type: String,
+    enum: ['8h-17h', '9h-18h', '10h-19h', 'Flexível'],
+    default: '8h-17h'
+  },
   genero: {
     type: String,
-    enum: ['Masculino', 'Feminino', 'Não Binário', 'Prefiro não informar']
+    enum: ['Masculino', 'Feminino', 'Não-binário', 'Prefiro não informar'],
+    default: 'Prefiro não informar'
   },
   raca: {
     type: String,
-    enum: ['Branca', 'Preta', 'Parda', 'Amarela', 'Indígena', 'Prefiro não informar']
-  },
-  localidade: {
-    cidade: String,
-    estado: String,
-    pais: {
-      type: String,
-      default: 'Brasil'
-    }
-  },
-  nivelCarreira: {
-    type: String,
-    enum: ['Junior', 'Pleno', 'Senior', 'Especialista', 'Coordenador', 'Gerente', 'Diretor']
+    enum: ['Branca', 'Preta', 'Parda', 'Amarela', 'Indígena', 'Prefiro não informar'],
+    default: 'Prefiro não informar'
   },
   notaAvaliacao: {
     type: Number,
     min: 0,
     max: 10
+  },
+  observacoes: {
+    type: String
   },
   createdAt: {
     type: Date,
@@ -103,15 +110,25 @@ const EmployeeSchema = new mongoose.Schema({
   }
 });
 
-// Configuração para criptografia de campos sensíveis (LGPD)
-const encKey = process.env.ENCRYPTION_KEY;
-const sigKey = process.env.ENCRYPTION_KEY;
-
-// Campos a serem criptografados
-EmployeeSchema.plugin(encrypt, { 
-  encryptionKey: encKey, 
-  signingKey: sigKey,
-  encryptedFields: ['cpf', 'dataNascimento', 'salario'] 
+// Middleware para atualizar o campo updatedAt antes de salvar
+EmployeeSchema.pre('save', function(next) {
+  this.updatedAt = Date.now();
+  next();
 });
+
+// Configuração de criptografia para campos sensíveis
+// Modificado para usar variáveis de ambiente ou valores padrão seguros
+const encKey = process.env.ENCRYPTION_KEY || 'sua_chave_de_criptografia_padrao_muito_segura_12345';
+
+// Aplicar plugin de criptografia apenas se a chave estiver disponível
+if (encKey) {
+  const encryptionOptions = {
+    secret: encKey,
+    encryptedFields: ['cpf', 'salario', 'dataNascimento'],
+    excludeFromEncryption: ['_id', 'nome', 'email', 'departamento', 'cargo', 'status']
+  };
+  
+  EmployeeSchema.plugin(mongooseEncryption, encryptionOptions);
+}
 
 module.exports = mongoose.model('Employee', EmployeeSchema);

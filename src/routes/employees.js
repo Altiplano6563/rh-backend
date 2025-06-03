@@ -1,134 +1,54 @@
-const mongoose = require('mongoose');
-const Schema = mongoose.Schema;
+const express = require('express');
+const router = express.Router();
+const { check } = require('express-validator');
+const { protect } = require('../middleware/auth');
+const employeeController = require('../controllers/employeeController');
 
-// Importar plugin de criptografia
-const mongooseEncryption = require('mongoose-encryption');
+// @route   GET /api/employees
+// @desc    Obter todos os funcionários
+// @access  Private
+router.get('/', protect, employeeController.getAllEmployees);
 
-const EmployeeSchema = new Schema({
-  nome: {
-    type: String,
-    required: true,
-    trim: true
-  },
-  email: {
-    type: String,
-    required: true,
-    unique: true,
-    trim: true,
-    lowercase: true
-  },
-  cpf: {
-    type: String,
-    required: true,
-    unique: true,
-    trim: true
-  },
-  dataNascimento: {
-    type: Date,
-    required: true
-  },
-  telefone: {
-    type: String,
-    trim: true
-  },
-  endereco: {
-    rua: String,
-    numero: String,
-    complemento: String,
-    bairro: String,
-    cidade: String,
-    estado: String,
-    cep: String
-  },
-  departamento: {
-    type: Schema.Types.ObjectId,
-    ref: 'Department',
-    required: true
-  },
-  cargo: {
-    type: Schema.Types.ObjectId,
-    ref: 'Position',
-    required: true
-  },
-  salario: {
-    type: Number,
-    required: true
-  },
-  dataAdmissao: {
-    type: Date,
-    required: true,
-    default: Date.now
-  },
-  dataDemissao: {
-    type: Date
-  },
-  status: {
-    type: String,
-    enum: ['Ativo', 'Inativo', 'Afastado', 'Férias'],
-    default: 'Ativo'
-  },
-  modalidadeTrabalho: {
-    type: String,
-    enum: ['Presencial', 'Remoto', 'Híbrido'],
-    default: 'Presencial'
-  },
-  cargaHoraria: {
-    type: Number,
-    enum: [150, 180, 200, 220],
-    default: 220
-  },
-  jornadaTrabalho: {
-    type: String,
-    enum: ['8h-17h', '9h-18h', '10h-19h', 'Flexível'],
-    default: '8h-17h'
-  },
-  genero: {
-    type: String,
-    enum: ['Masculino', 'Feminino', 'Não-binário', 'Prefiro não informar'],
-    default: 'Prefiro não informar'
-  },
-  raca: {
-    type: String,
-    enum: ['Branca', 'Preta', 'Parda', 'Amarela', 'Indígena', 'Prefiro não informar'],
-    default: 'Prefiro não informar'
-  },
-  notaAvaliacao: {
-    type: Number,
-    min: 0,
-    max: 10
-  },
-  observacoes: {
-    type: String
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now
-  },
-  updatedAt: {
-    type: Date,
-    default: Date.now
-  }
-});
+// @route   GET /api/employees/:id
+// @desc    Obter funcionário por ID
+// @access  Private
+router.get('/:id', protect, employeeController.getEmployeeById);
 
-// Middleware para atualizar o campo updatedAt antes de salvar
-EmployeeSchema.pre('save', function(next) {
-  this.updatedAt = Date.now();
-  next();
-});
+// @route   POST /api/employees
+// @desc    Criar um novo funcionário
+// @access  Private
+router.post(
+  '/',
+  [
+    protect,
+    [
+      check('nome', 'Nome é obrigatório').not().isEmpty(),
+      check('email', 'Email válido é obrigatório').isEmail(),
+      check('cpf', 'CPF é obrigatório').not().isEmpty(),
+      check('dataNascimento', 'Data de nascimento é obrigatória').not().isEmpty(),
+      check('departamento', 'Departamento é obrigatório').not().isEmpty(),
+      check('cargo', 'Cargo é obrigatório').not().isEmpty(),
+      check('dataContratacao', 'Data de contratação é obrigatória').not().isEmpty(),
+      check('salario', 'Salário é obrigatório').isNumeric(),
+      check('cargaHoraria', 'Carga horária é obrigatória').isNumeric()
+    ]
+  ],
+  employeeController.createEmployee
+);
 
-// Configuração de criptografia para campos sensíveis
-// Modificado para usar variáveis de ambiente ou valores padrão seguros
-const encKey = process.env.ENCRYPTION_KEY || 'sua_chave_de_criptografia_padrao_muito_segura_12345';
+// @route   PUT /api/employees/:id
+// @desc    Atualizar funcionário
+// @access  Private
+router.put('/:id', protect, employeeController.updateEmployee);
 
-// Aplicar plugin de criptografia apenas se a chave estiver disponível
-if (encKey) {
-  const encryptionOptions = {
-    secret: encKey,
-    encryptedFields: ['cpf', 'salario', 'dataNascimento'],
-    excludeFromEncryption: ['_id', 'nome', 'email', 'departamento', 'cargo', 'status']
-  };
-  
-  EmployeeSchema.plugin(mongooseEncryption, encryptionOptions);
-}
+// @route   DELETE /api/employees/:id
+// @desc    Deletar funcionário
+// @access  Private
+router.delete('/:id', protect, employeeController.deleteEmployee);
 
-module.exports = mongoose.model('Employee', EmployeeSchema);
+// @route   GET /api/employees/stats
+// @desc    Obter estatísticas de funcionários
+// @access  Private
+router.get('/stats', protect, employeeController.getEmployeeStats);
+
+module.exports = router;
