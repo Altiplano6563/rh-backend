@@ -23,10 +23,14 @@ const app = express();
 // Configuração de segurança
 app.use(helmet());
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || '*',
+  origin: ['https://rh-frontend-six.vercel.app', 'http://localhost:3000'],
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  credentials: true,
   allowedHeaders: ['Content-Type', 'Authorization']
-}));
+} ));
+
+// Middleware para OPTIONS preflight
+app.options('*', cors());
 
 // Rate limiting para prevenir ataques de força bruta
 const limiter = rateLimit({
