@@ -22,12 +22,20 @@ const app = express();
 
 // Configuração de segurança
 app.use(helmet());
-app.use(cors({
-  origin: ['https://rh-frontend-six.vercel.app', 'http://localhost:3000'],
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  credentials: true,
-  allowedHeaders: ['Content-Type', 'Authorization']
-} ));
+// Configuração CORS - permitir acesso do frontend
+app.use((req, res, next) => {
+  res.setHeader('Access-Control-Allow-Origin', 'https://rh-frontend-six.vercel.app' );
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  
+  // Tratamento especial para requisições OPTIONS (preflight)
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(200);
+  }
+  
+  next();
+});
 
 // Middleware para OPTIONS preflight
 app.options('*', cors());
