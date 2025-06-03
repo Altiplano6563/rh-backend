@@ -3,6 +3,8 @@ const router = express.Router();
 const { check } = require('express-validator');
 const { protect } = require('../middleware/auth');
 const authController = require('../controllers/authController');
+const bcrypt = require('bcryptjs');
+const User = require('../models/User');
 
 // @route   POST /api/auth/register
 // @desc    Registrar usuário
@@ -89,5 +91,34 @@ router.post(
   ],
   authController.refreshToken
 );
+
+// Rota temporária para criar admin - REMOVER APÓS USO
+router.get('/setup-admin', async (req, res) => {
+  try {
+    const adminExists = await User.findOne({ email: 'admin@exemplo.com' });
+    if (adminExists) {
+      return res.status(400).json({ msg: 'Admin já existe' });
+    }
+    
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash('senha123', salt);
+    
+    const admin = new User({
+      nome: 'Admin',
+      email: 'admin@exemplo.com',
+      senha: hashedPassword,
+      perfil: 'Admin',
+      ativo: true,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    });
+    
+    await admin.save();
+    res.json({ msg: 'Admin criado com sucesso' });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Erro no servidor');
+  }
+});
 
 module.exports = router;
