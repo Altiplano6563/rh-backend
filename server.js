@@ -30,7 +30,7 @@ app.use((req, res, next) => {
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   
   // Tratamento especial para requisições OPTIONS (preflight)
-  if (req.method === 'OPTIONS') {
+   if (req.method === 'OPTIONS') {
     return res.sendStatus(200);
   }
   
