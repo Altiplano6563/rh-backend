@@ -21,24 +21,17 @@ const dashboardRoutes = require('./src/routes/dashboard');
 const app = express();
 
 // Configuração de segurança
-app.use(helmet());
-// Configuração CORS - permitir acesso do frontend
-app.use((req, res, next) => {
-  res.setHeader('Access-Control-Allow-Origin', 'https://rh-frontend-six.vercel.app' );
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
-  
-  // Tratamento especial para requisições OPTIONS (preflight)
-   if (req.method === 'OPTIONS') {
-    return res.sendStatus(200);
-  }
-  
-  next();
-});
+app.use(helmet({
+  crossOriginResourcePolicy: false // Desabilita para permitir CORS
+}));
 
-// Middleware para OPTIONS preflight
-app.options('*', cors());
+// Configuração CORS simplificada - permite qualquer origem
+app.use(cors({
+  origin: '*',  // Permite requisições de qualquer origem
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
+}));
 
 // Rate limiting para prevenir ataques de força bruta
 const limiter = rateLimit({
