@@ -69,7 +69,7 @@ if (encKey) {
 }
 
 // Método para comparar senhas
-userSchema.methods.matchPassword = async function(enteredPassword ) {
+userSchema.methods.matchPassword = async function(enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.senha);
 };
 
