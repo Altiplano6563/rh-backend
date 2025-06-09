@@ -68,4 +68,9 @@ if (encKey) {
   UserSchema.plugin(mongooseEncryption, encryptionOptions);
 }
 
+// Método para comparar senhas
+userSchema.methods.matchPassword = async function(enteredPassword ) {
+  return await bcrypt.compare(enteredPassword, this.senha);
+};
+
 module.exports = mongoose.model('User', UserSchema);

@@ -50,38 +50,45 @@ exports.register = async (req, res, next) => {
 // @access  Public
 exports.login = async (req, res, next) => {
   try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ success: false, errors: errors.array() });
-    }
-
     const { email, senha } = req.body;
 
+    // Validar email e senha
+    if (!email || !senha) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Por favor, informe email e senha'
+      });
+    }
+
     // Verificar se o usuário existe
-    const user = await User.findOne({ email }).select('+senha');
+    const user = await User.findOne({ email });
+
     if (!user) {
       return res.status(401).json({
-        success: false,
-        error: 'Credenciais inválidas'
+        status: 'error',
+        message: 'Credenciais inválidas'
       });
     }
 
     // Verificar se a senha está correta
     const isMatch = await user.matchPassword(senha);
+
     if (!isMatch) {
       return res.status(401).json({
-        success: false,
-        error: 'Credenciais inválidas'
+        status: 'error',
+        message: 'Credenciais inválidas'
       });
     }
 
-    // Gerar refresh token
-    const refreshToken = user.getRefreshToken();
-    await user.save();
+    // Gerar token JWT
+    const token = user.getSignedJwtToken();
 
-    sendTokenResponse(user, 200, res);
-  } catch (err) {
-    next(err);
+    res.status(200).json({
+      status: 'success',
+      token
+    });
+  } catch (error) {
+    next(error);
   }
 };
 
