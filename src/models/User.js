@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 
 // Importar plugin de criptografia
 const mongooseEncryption = require('mongoose-encryption');
@@ -55,7 +56,6 @@ UserSchema.pre('save', function(next) {
 });
 
 // Configuração de criptografia para campos sensíveis
-// Modificado para usar variáveis de ambiente ou valores padrão seguros
 const encKey = process.env.ENCRYPTION_KEY || 'sua_chave_de_criptografia_padrao_muito_segura_12345';
 
 // Aplicar plugin de criptografia apenas se a chave estiver disponível
@@ -72,6 +72,15 @@ if (encKey) {
 // Método para comparar senhas
 UserSchema.methods.matchPassword = async function(enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.senha);
+};
+
+// Método para gerar token JWT
+UserSchema.methods.getSignedJwtToken = function() {
+  return jwt.sign(
+    { id: this._id, perfil: this.perfil },
+    process.env.JWT_SECRET,
+    { expiresIn: process.env.JWT_EXPIRE || '30d' }
+  );
 };
 
 module.exports = mongoose.model('User', UserSchema);
