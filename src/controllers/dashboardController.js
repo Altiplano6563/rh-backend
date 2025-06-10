@@ -3,6 +3,8 @@ const Department = require('../models/Department');
 const Position = require('../models/Position');
 const Movement = require('../models/Movement');
 const DashboardMetric = require('../models/DashboardMetric');
+const SalaryTable = require('../models/SalaryTable');
+
 
 // @desc    Obter estatísticas gerais do dashboard
 // @route   GET /api/dashboard/stats
