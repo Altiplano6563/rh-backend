@@ -61,7 +61,7 @@ exports.login = async (req, res, next) => {
     }
 
     // Verificar se o usuário existe
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email }).select('+senha');
 
     if (!user) {
       return res.status(401).json({
@@ -83,9 +83,19 @@ exports.login = async (req, res, next) => {
     // Gerar token JWT
     const token = user.getSignedJwtToken();
 
+    // Modificar o formato da resposta para corresponder ao que o frontend espera
     res.status(200).json({
       status: 'success',
-      token
+      data: {
+        accessToken: token,
+        refreshToken: token, // Usando o mesmo token como refreshToken por simplicidade
+        user: {
+          id: user._id,
+          nome: user.nome,
+          email: user.email,
+          perfil: user.perfil
+        }
+      }
     });
   } catch (error) {
     next(error);
