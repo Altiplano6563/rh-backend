@@ -20,17 +20,16 @@ const dashboardRoutes = require('./src/routes/dashboard');
 // Inicialização do app
 const app = express();
 
-// Configuração de segurança
-app.use(helmet({
-  crossOriginResourcePolicy: false // Desabilita para permitir CORS
-}));
-
-// Configuração CORS simplificada - permite qualquer origem
 app.use(cors({
-  origin: '*',  // Permite requisições de qualquer origem
+  origin: 'https://rh-frontend-six.vercel.app',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
+}));
+
+// Configuração de segurança
+app.use(helmet({
+  crossOriginResourcePolicy: false // Desabilita para permitir CORS
 }));
 
 // Rate limiting para prevenir ataques de força bruta
