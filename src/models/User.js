@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
+const bcrypt = require('bcryptjs');
 
 // Importar plugin de criptografia
 const mongooseEncryption = require('mongoose-encryption');
@@ -69,7 +70,7 @@ if (encKey) {
 }
 
 // Método para comparar senhas
-userSchema.methods.matchPassword = async function(enteredPassword) {
+UserSchema.methods.matchPassword = async function(enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.senha);
 };
 
