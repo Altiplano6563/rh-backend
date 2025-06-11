@@ -21,7 +21,7 @@ const dashboardRoutes = require('./src/routes/dashboard');
 const app = express();
 
 app.use(cors({
-  origin: 'https://rh-frontend-six.vercel.app',
+  origin: '*',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
